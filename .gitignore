@@ -4,4 +4,4 @@
 /ip_checker/__pycache__/
 # Ignoring glade program files
 *.galde
-*,glade~
+*.glade~
