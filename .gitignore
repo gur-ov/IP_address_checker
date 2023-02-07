@@ -1,0 +1,4 @@
+# Ignore all log file
+*.txt
+# Ignore pycache folder
+/ip_checker/__pycache__/
