@@ -1,0 +1,25 @@
+2023-02-06T13:01:29.112372+0100, ERROR, find_ip:278 -> Failed to get IP: connection error.
+2023-02-06T15:38:27.445166+0100, ERROR, Gtk:1689 -> An error has been caught in function 'main', process 'MainProcess' (2783), thread 'MainThread' (139957269919552):.
+Traceback (most recent call last):
+
+  File "/home/gurov/code/chatGPT/ip_checker/ip_checker/main.py", line 331, in <module>
+    gtk.main()
+    │   └ <function main at 0x7f4a53950b80>
+    └ <GtkProxyModule <IntrospectionModule 'Gtk' from '/usr/lib/girepository-1.0/Gtk-3.0.typelib'>>
+
+> File "/home/gurov/code/chatGPT/ip_checker/.venv/lib/python3.10/site-packages/gi/overrides/Gtk.py", line 1689, in main
+    return _Gtk_main(*args, **kwargs)
+           │          │       └ {}
+           │          └ ()
+           └ gi.FunctionInfo(main)
+
+  File "/home/gurov/code/chatGPT/ip_checker/ip_checker/main.py", line 320, in start
+    self.main()
+    │    └ <function VisibleWindow.main at 0x7f4a5588d870>
+    └ <__main__.VisibleWindow object at 0x7f4a54a22b00 (__main__+VisibleWindow at 0x563dce7d0290)>
+
+  File "/home/gurov/code/chatGPT/ip_checker/ip_checker/main.py", line 153, in main
+    self.your_request_is_user_input)
+    └ <__main__.VisibleWindow object at 0x7f4a54a22b00 (__main__+VisibleWindow at 0x563dce7d0290)>
+
+AttributeError: 'VisibleWindow' object has no attribute 'your_request_is_user_input'
