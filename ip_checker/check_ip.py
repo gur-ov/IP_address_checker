@@ -1,17 +1,18 @@
-"""
-Comparison of external external IPv4 addresses with another presented to
-compare with an IPv4 address.
-
-Author: Mikhail Gurov
-Last Modified: Feb 06, 2023
-"""
-#!/usr/bin/env python3.10
-# -- coding: utf-8 --
-
-from ipaddress import ip_address
-from typing import Union, NamedTuple
+import sys
 from loguru import logger
+from ipaddress import ip_address
+from typing import Callable, Union, Tuple, NamedTuple, TypeVar
 from find_ip import GetMyIP
+
+#Synonyms of data types for type hinting
+IPV4 = str
+OCTET = int
+IPV4_ADDRESS_STR = str
+IPV4_ADDRESS_TUPLE_WITH_STR = Tuple[IPV4_ADDRESS_STR]
+IPV4_ADDRESS_TUPLE_WITH_INT = Tuple[OCTET, OCTET, OCTET, OCTET]
+# Переменная для указания на self класса IPAddressVerification для type hinting
+IPAddressVerificationType = TypeVar(\
+        'IPAddressVerificationType', bound='IPAddressVerification')
 
 logger.add(
         'check_ip.log.txt',
@@ -30,119 +31,138 @@ class IPComparisonResult(NamedTuple):
     user_input: str
     current_ip: str
 
+def validate_input(func:\
+        Callable[[IPAddressVerificationType, IPV4_ADDRESS_STR], None])\
+        -> Callable[[IPAddressVerificationType, IPV4_ADDRESS_STR], None]:
+    """
+    Decorator for setters: set_current_ip, set_user_input_ip.
+    Performs the function of validation and possible normalization of incoming data.
+
+    Parameters (only one of the options below is allowed):
+        "255.255.255.255" - str without errors as ipv4 address;
+        " 1,1,1.1. " - str with typos in the form of an ipv4 address with
+            commas instead of dots, a dot or comma at the end and extra spaces
+            from the beginning and end;
+        1,1,1,1 - four digits separated by commas;
+        ipv4="1.1.1.1" - dict with str as value as IPv4 address without errors;
+        ipv4=" 1,1.1,1. " - dict with str as value as an IPv4 address with
+            typos as commas instead of dots, dot or comma at the end and extra
+            spaces at the beginning and end.
+
+    Returns:
+         str: Validated data containing a valid IPv4 address.
+    """
+    def wrapper(self, *args, **kwargs) -> None:
+
+        if bool(kwargs):
+            if len(kwargs) == 1:
+                for value in kwargs.values():
+                    ipv4_not_verified = value
+            else:
+                return None
+        else:
+            if len(args) == 1:
+                ipv4_not_verified = args[0]
+            elif len(args) == 4:
+                ipv4_not_verified_list = list(args)
+                ipv4_not_verified = \
+                        '.'.join(str(i) for i in ipv4_not_verified_list)
+            else:
+                return None
+        try:
+            # ipv4_not_verified is posibly unbound! Why?
+            ipv4_not_verified_striped =  ipv4_not_verified.strip()
+            ipv4_not_verified_normalized = ipv4_not_verified_striped.replace(',', '.')
+            if ipv4_not_verified_normalized[-1] == '.':
+                ipv4_not_verified = ipv4_not_verified_normalized[:-1]
+            else:
+                ipv4_not_verified = ipv4_not_verified_normalized
+        except AttributeError as exc:
+            logger.error(f'ipv4_not_verified variable is not a string: {exc}')
+            return None
+        except NameError as exc:
+            logger.error(f'ipv4_not_verified variable is not exist: {exc}')
+            return None
+        try:
+            ipv4 = ip_address(ipv4_not_verified)
+        except ValueError as exc:
+            logger.warning(f'Variable does not contain an IP address.\
+                    Value: {ipv4_not_verified}. {exc}')
+            return None
+        try:
+            ipv4.version
+        except AttributeError as exc:
+            return None
+        return func(self, str(ipv4)) # OK
+    return wrapper
+
+
 class IPAddressVerification():
     """
     Comparison of external external IPv4 addresses with another presented
     to compare with an IPv4 address.
 
-     Methods:
-         __init__: class initialization;
-         ipv4_type_check: check data against IPv4m data characteristics;
-         data_normalization: string normalization;
-         data_type_check: data check for page data check;
-         comparison_ipv4: compare IPv4 addresses;
-         run: Run a process method.
+    Methods:
+        __init__: class initialization;
+        get_current_ip: get the current external IPv4 address;
+        set_current_ip: pass the current external IPv4 address to the class;
+        get_user_input_ip: get the IPv4 address entered by the user;
+        set_user_input_ip: pass the address from the user to the IPv4 class;
+        comparison_ipv4: compare IPv4 addresses;
+        run: Run a process method.
 
-     Class level variables:
-         self.user_input: string from the user suspected IPv4 address;
-         self.current_ip: the device's current external IPv4 address.
+    Properties:
+        user_ip = for get_user_input_ip and set_user_input_ip
+        current_ip = for get_current_ip and set_current_ip
 
-     Exceptions:
-         In developing.
+    Class level variables:
+        self._hidden_user_input_ip = string from the user suspected IPv4 address;
+        self._hidden_current_ip = the device's current external IPv4 address.
 
-     External resources:
-         GetMyIP module - external external IPv4 addresses of the device.
+    Exceptions:
+        In developing.
+
+    External resources:
+        GetMyIP module - external external IPv4 addresses of the device.
     """
-
-
-    def __init__(self,
-            user_input:str = '127.0.0.1',
-            current_ip:str = '127.0.0.1'):
+    def __init__(self):
         """
         """
-        self.user_input = user_input
-        self.current_ip = current_ip
+        self._hidden_user_input_ip = ''
+        self._hidden_current_ip = ''
 
+    def get_current_ip(self) -> IPV4_ADDRESS_STR:
+        """
+        Getter method for safe access to variable _hidden_current_ip.
+        """
+        return self._hidden_current_ip
+
+    @validate_input
+    def set_current_ip(self, *args: IPV4_ADDRESS_STR):
+        """
+        Setter method for safely changing variable _hidden_current_ip.
+        """
+        self._hidden_current_ip = args[0]
+
+    def get_user_input_ip(self) -> IPV4_ADDRESS_STR:
+        """
+        Getter method for safe access to variable _hidden_user_input_ip.
+        """
+        return self._hidden_user_input_ip
+
+    @validate_input
+    def set_user_input_ip(self, *args: IPV4_ADDRESS_STR):
+        """
+        Setter method for safely changing variable _hidden_user_input_ip.
+        """
+        self._hidden_user_input_ip = args[0]
+
+    user_ip = property(get_user_input_ip, set_user_input_ip)
+    current_ip = property(get_current_ip, set_current_ip)
 
     @logger.catch
-    def ipv4_type_check(self, ipv4_to_check:str) -> Union[bool, None]:
-        """
-        Checking if the contents of a string is an IPv4 address.
-
-        Parameters:
-            ipv4_to_check (str): string with IPv4 addresses.
-
-        Returns:
-            bool: True if ipv4_to_check is IPv4 address;
-            None: if any error occurred.
-        """
-        try:
-            ipv4 = ip_address(ipv4_to_check)
-        except ValueError as exc:
-            logger.warning(f'Variable does not contain an IP address.\
-                    Value: {ipv4_to_check}. {exc}')
-            return None
-        try:
-            if ipv4.version == 4:
-                return True
-        except AttributeError as exc:
-            logger.error(f'The variable does not contain an IPv4 address. Value: {ipv4}. {exc}')
-            return None
-        return False
-
-
-    @logger.catch
-    def data_normalization(self, user_string:str) -> Union[str, None]:
-        """
-        Attempt to normalize user input. An IPv4 address is expected,
-        but several typical input errors are expected:
-            - Spaces at the beginning and end of the line;
-            - Commas instead of dots.
-        The method must take a string, normalize it,
-        and return it to its normalized form.
-
-        Parameters:
-            user_string (str): string entered by the user.
-
-        Returns:
-            str: normalized string;
-            None: if any error occurred.
-        """
-        #if type(user_string) is not str:
-        if not isinstance(user_string, str):
-            logger.error(f'The data from the user is not a string. Value: {user_string}')
-            return None
-        user_string_strip =  user_string.strip()
-        normalized_input = user_string_strip.replace(',', '.')
-        return normalized_input
-
-
-    @logger.catch
-    def data_type_check(self, user_input: Union[str, int, float]) -> Union[str, None]:
-        """
-        Checking if the information received by the module is a string.
-        If the received data is not a string, the method should try to make
-        a string out of it.
-
-        Parameters:
-             user_input: data of arbitrary type passed to the module.
-
-        Returns:
-            str: checked string;
-            None: if any error occurred.
-        """
-        if isinstance(user_input, str):
-            return user_input
-        try:
-            user_input = str(user_input)
-            return user_input
-        except TypeError as exc:
-            logger.error(f'An attempt to create a string from a user variable failed. {exc}')
-            return None
-
-
-    @logger.catch
-    def comparison_ipv4(self, current_ipv4_address:str, ipv4_to_check:str) -> Union[bool, None]:
+    def comparison_ipv4(self, ipv4_to_check:str,current_ipv4_address:str)\
+            -> Union[bool, None]:
         """
         This method is responsible for comparing the user input
         IPv4 address with the current external IPv4 address.
@@ -163,7 +183,6 @@ class IPAddressVerification():
             logger.error(f'Failed to compare variables. {exc}')
             return None
 
-
     @logger.catch
     def run(self) -> Union[IPComparisonResult, None]:
         """
@@ -178,24 +197,8 @@ class IPAddressVerification():
                 current_ip: str
             None: if any error occurred.
         """
-        current_ip = self.data_type_check(self.current_ip)
-        user_input = self.data_type_check(self.user_input)
-        if user_input is None or current_ip is None:
-            logger.warning('Method (data_type_check) returned None')
-            return None
-        normalized_user_input = self.data_normalization(user_input)
-        normalized_current_ip = self.data_normalization(current_ip)
-        if normalized_user_input is None or normalized_current_ip is None:
-            logger.warning('Method (data_normalization) returned None')
-            return None
-        user_input_result_type_checking = self.ipv4_type_check(normalized_user_input)
-        current_ip_result_type_checking = self.ipv4_type_check(normalized_current_ip)
-
-        # Сиправить воложенность!
-        if user_input_result_type_checking and current_ip_result_type_checking is True:
-            result_of_checking = self.comparison_ipv4(normalized_current_ip, normalized_user_input)
-        else:
-            return None
+        result_of_checking = self.comparison_ipv4(\
+                self._hidden_user_input_ip, self._hidden_current_ip)
 
         if result_of_checking is None:
             logger.warning('Method (comparison_ipv4) returned None')
@@ -203,16 +206,23 @@ class IPAddressVerification():
 
         return IPComparisonResult(
                 result = result_of_checking,
-                user_input = normalized_user_input,
-                current_ip = normalized_current_ip
+                user_input = self._hidden_user_input_ip,
+                current_ip = self._hidden_current_ip
                 )
 
+
 if __name__ == '__main__':
-    string_input_from_user = input('Enter the IPv4 to compare: ')
+    if len(sys.argv) == 2:
+        #Here, input is expected in the format python "name_module.py 1.1.1.1".
+        USER_INPUT = sys.argv[1]
+    else:
+        USER_INPUT = input('Enter the IPv4 to compare: ')
     ip = GetMyIP()
     CURRENT_EXTERNAL_IP = str(ip.get())
-    comparison = IPAddressVerification(string_input_from_user, CURRENT_EXTERNAL_IP)
-    result = comparison.run()
+    obj = IPAddressVerification()
+    obj.current_ip = CURRENT_EXTERNAL_IP
+    obj.user_ip = USER_INPUT
+    result = obj.run()
     if result is None:
         print('Something went wrong - no result.')
     else:
@@ -223,7 +233,7 @@ if __name__ == '__main__':
         else:
             CHOSEN_WORD = '(ERROR! Something wrong)'
         print(f"""
-        Your input '{string_input_from_user}' after normalizing '{result[1]}'
+        Your input '{USER_INPUT}' after normalizing '{result[1]}'
         and comparison with the current IPv4 address '{result[2]}'
         allows you to report that the address you entered is {CHOSEN_WORD}.
           """)
