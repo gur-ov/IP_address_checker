@@ -37,7 +37,9 @@ import sys
 import argparse
 import os
 from dataclasses import dataclass
-from typing import Optional, Callable
+from typing import Optional, Callable, NamedTuple
+import datetime
+import pytz
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 module_dir = os.path.join(current_dir, '..', 'ip_checker')
@@ -54,22 +56,29 @@ class TestReturn():
     class for their further processing in other methods, as well as for the
     correct use of type hinting.
 
-     Example
-     -------
-     You can style the return method like this:
+    Example
+    -------
+    You can style the return method like this:
 
-         return TestReturn(
-                 test_result = True, # True is a successful.
-                 details = 'Any details about the test and its results',
-                 test_doc = class_name.test_name.__doc__)
+        return TestReturn(
+                test_result = True, # True is a successful.
+                details = 'Any details about the test and its results',
+                test_doc = class_name.test_name.__doc__)
 
     """
+    test_name: str
     test_result: bool
     details: Optional[str]
     test_doc: Optional[str]
 
+class TimeReturn(NamedTuple):
+    """
+    """
+    time_str_for_title: str
+    time_str_for_simple_test: str
+
 class TestsIPAddressVerification():
-    """ Collection and management of unit tests for IPAddressVerification.
+    """Collection and management of unit tests for IPAddressVerification.
 
     This class is a collection of unit tests to test the operation of the
     IPAddressVerification class.
@@ -98,9 +107,30 @@ class TestsIPAddressVerification():
 
     """
     def __init__(self):
-        pass
+        self.time_variable = self.current_time()
+        self.argv = self.get_argv()
+        if self.argv.details:
+            self.argv = 'details'
+        elif self.argv.setnote:
+            self.argv = 'set_note'
+        elif self.argv.details and self.argv.setnote:
+            self.argv = 'set_note'
+        else:
+            pass # Нужно обработать этот сценарий
 
-    def get_argv(self) -> Optional[int]:
+    def current_time(self) -> TimeReturn:
+        my_locale = "Europe/Bratislava" # Enter you city!
+        timezone = pytz.timezone(my_locale)
+        now = datetime.datetime.now()
+        now_with_timezone = timezone.localize(now)
+        datetime_for_title = now_with_timezone.strftime("%B %d, %Y at %H:%M")
+        datetime_for_test = now_with_timezone.strftime("%Y.%m.%d, %H:%M")
+        return TimeReturn(
+                time_str_for_title = datetime_for_title,
+                time_str_for_simple_test = datetime_for_test,
+                )
+
+    def get_argv(self) -> argparse.Namespace:
         """Description and processing of command line arguments.
 
         If testing is carried out with the -d or --details option, then details
@@ -116,10 +146,26 @@ class TestsIPAddressVerification():
                 description="Getting a command line argument.")
         parser.add_argument("-d", "--details", action="store_true",\
                             help="Displaying detailed info on the tests performed.")
+        parser.add_argument("-s", "--setnote", action="store_true",\
+                            help="Write a detailed test report to a file.")
         args = parser.parse_args()
-        if args.details: # Type hinting wrong?
-            return 1
-        return None
+        return args
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def running_tests(self) -> None:
         """All tests should be run here in turn.
@@ -139,35 +185,55 @@ class TestsIPAddressVerification():
 
         """
         results: list = []
-        tests = ( # Don't forget to add a new test here.
-               self.test_1(), # Index[0] in results.
+        tests = ( # Don't forget to add a new test here!
+               self.test_1(), # Index[0] is results.
+               self.test_2(),
+               self.test_3(),
+               self.test_4(),
+               self.test_5(),
+               self.test_6(),
                 )
         for i in tests:
             results.append([i.test_result, i.details, i.test_doc])
-        args = self.get_argv()
-        if args == 1:
+        # variable "i" is possibly unbound if use this messages incorrectly
+        head_message = (f'\nOn {self.time_variable.time_str_for_title},\
+ unit tests were launched to\n'
+                        f'test the functionality of module "check_ip.py".\n'
+                        f'_________________________________________________'),
+        success_message = (f'\nThe test "{i.test_name}" was passed SUCCESSFULLY.\n\n'
+                           f'Test details:\n{i.details}\n\n'
+                           f'Test documentation: {i.test_doc}'
+                           f'_________________________________________________'),
+        fail_message = (f'The test {i.test_name} was passed FAIL.\n\n'
+                        f'Test details:\n{i.details}\n\n'
+                        f'Test documentation: {i.test_doc}'
+                        f'_________________________________________________'),
+        reports = {
+                "head": head_message,
+                "success": success_message,
+                "fail": fail_message,
+                "ok": "OK",
+                "no": "FAIL",
+                }
+
+        if self.argv == 'details':
+            print(reports['head'][0])
             for i in tests:
                 if i.test_result:
-                    print(
-                            f'The test was passed SUCCESSFULLY.\n\n'
-                            f'Test details:\n{i.details}\n\n'
-                            f'Test documentation:{i.test_doc}'
-                            )
+                    print(reports['success'][0])
                 else:
-                    print(
-                            f'The test was passed FAIL.\n\n'
-                            f'Test details:\n{i.details}\n\n'
-                            f'Test documentation:{i.test_doc}'
-                            )
+                    print(reports['fail'][0])
+        elif self.argv == 'set_note':
+            pass # send report to file
         else:
             for i in tests:
-                if i.test_result: # If True
-                    print("OK")
+                if i.test_result:
+                    print(reports['ok'])
                 else:
-                    print("FAIL")
+                    print(reports['no'])
 
     def running_only_one_test(self,test_name: Callable[[], TestReturn]) -> None:
-        """ Run an individual test.
+        """Run an individual test.
 
         The result of the method operation depends on the command line
         parameters. If there are no parameters, a short information about the
@@ -190,15 +256,15 @@ class TestsIPAddressVerification():
         if args == 1:
             if i.test_result:
                 print(
-                        f'The test was passed SUCCESSFULLY.\n\n'
+                        f'The test {i.test_name} was passed SUCCESSFULLY.\n\n'
                         f'Test details:\n{i.details}\n\n'
-                        f'Test documentation:{i.test_doc}'
+                        f'Test documentation: {i.test_doc}'
                         )
             else:
                 print(
-                        f'The test was passed FAIL.\n\n'
+                        f'The test {i.test_name} was passed FAIL.\n\n'
                         f'Test details:\n{i.details}\n\n'
-                        f'Test documentation:{i.test_doc}'
+                        f'Test documentation: {i.test_doc}'
                         )
         else:
             if i.test_result: # If True
@@ -207,21 +273,23 @@ class TestsIPAddressVerification():
                 print("FAIL")
 
     def test_1(self) -> TestReturn:
-        """ Test for input '1.1.1.1'
+        """Test for input '8.8.8.8'
 
         The test sends for verification an IP address written without errors in
         the format of the drain. The result of the comparison must be False.
 
         """
-        discription = TestsIPAddressVerification.test_1.__doc__
-
+        test_method_name = 'test_1'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
         current_ip = str(GetMyIP().get())
         obj = IPAddressVerification()
         obj.user_ip = '8.8.8.8' # Must be FALSE (Are you in California? :)
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\t    User input is {result[1]} and current external\n'
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is {result[1]} and current external\n'
                 f'\tIPv4-address is {result[2]}. Comparing these data,\n'
                 f'\tthe program returned {result[0]}.'
                 )
@@ -229,10 +297,190 @@ class TestsIPAddressVerification():
             test_result = False
         test_result = True
         return TestReturn(
+                test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
                 test_doc = discription) # Type hinting wrong?
 
+    def test_2(self) -> TestReturn:
+        """Test for input '   8,8.8.8,   '
+
+        The test sends for verification an IP address written without errors in
+        the format of the drain. The result of the comparison must be False.
+
+        """
+        test_method_name = 'test_2'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
+        current_ip = str(GetMyIP().get())
+        obj = IPAddressVerification()
+        ipv4_address_for_verification = '   8,8.8.8,   '
+        obj.user_ip = ipv4_address_for_verification
+        obj.current_ip = current_ip
+        result = obj.run()
+        test_details = (
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is "{ipv4_address_for_verification}"\
+ (after normalize "{result[1]}")\n'
+                f'\tand current external IPv4-address is {result[2]}.\n'
+                f'\tComparing these data, the program returned {result[0]}.\n'
+                )
+        if result[0] is True: # Если есть соотвествие адресов
+            test_result = False
+        elif result[0] is False and str(ipv4_address_for_verification)\
+                != str(result[1]):
+            test_result = True
+        else:
+            test_result = False
+        return TestReturn(
+                test_name = test_method_name,
+                test_result = test_result,
+                details =  test_details,
+                test_doc = discription) # Type hinting wrong?
+
+    def test_3(self) -> TestReturn:
+        """Test for input '8.8.777.8'
+
+        The test sends for verification an IP address written without errors in
+        the format of the drain. The result of the comparison must be False.
+
+        """
+        test_method_name = 'test_3'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
+        current_ip = str(GetMyIP().get())
+        obj = IPAddressVerification()
+        ipv4_address_for_verification = '8.8.777.8'
+        obj.user_ip = ipv4_address_for_verification
+        obj.current_ip = current_ip
+        result = obj.run()
+        test_details = (
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is "{ipv4_address_for_verification}"\
+ (after normalize "{result[1]}")\n'
+                f'\tand current external IPv4-address is {result[2]}.\n'
+                f'\tComparing these data, the program returned {result[0]}.\n'
+                )
+        if result[0] is True: # Если есть соотвествие адресов
+            test_result = False
+        elif result[0] is False and str(ipv4_address_for_verification)\
+                != str(result[1]):
+            test_result = True
+        else:
+            test_result = False
+        return TestReturn(
+                test_name = test_method_name,
+                test_result = test_result,
+                details =  test_details,
+                test_doc = discription) # Type hinting wrong?
+
+    def test_4(self) -> TestReturn:
+        """Test for input '8.8.-777.8'
+
+        The test sends for verification an IP address written without errors in
+        the format of the drain. The result of the comparison must be False.
+
+        """
+        test_method_name = 'test_4'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
+        current_ip = str(GetMyIP().get())
+        obj = IPAddressVerification()
+        ipv4_address_for_verification = '8.8.-777.8'
+        obj.user_ip = ipv4_address_for_verification
+        obj.current_ip = current_ip
+        result = obj.run()
+        test_details = (
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is "{ipv4_address_for_verification}"\
+ (after normalize "{result[1]}")\n'
+                f'\tand current external IPv4-address is {result[2]}.\n'
+                f'\tComparing these data, the program returned {result[0]}.\n'
+                )
+        if result[0] is True: # Если есть соотвествие адресов
+            test_result = False
+        elif result[0] is False and str(ipv4_address_for_verification)\
+                != str(result[1]):
+            test_result = True
+        else:
+            test_result = False
+        return TestReturn(
+                test_name = test_method_name,
+                test_result = test_result,
+                details =  test_details,
+                test_doc = discription) # Type hinting wrong?
+
+    def test_5(self) -> TestReturn:
+        """Test for input 8,8,8,8
+
+        The test sends for verification an IP address written without errors in
+        the format of the drain. The result of the comparison must be False.
+
+        """
+        test_method_name = 'test_5'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
+        current_ip = str(GetMyIP().get())
+        obj = IPAddressVerification()
+        ipv4_address_for_verification = 8,8,8,8
+        obj.user_ip = ipv4_address_for_verification
+        obj.current_ip = current_ip
+        result = obj.run()
+        test_details = (
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is "{ipv4_address_for_verification}"\
+ (after normalize "{result[1]}")\n'
+                f'\tand current external IPv4-address is {result[2]}.\n'
+                f'\tComparing these data, the program returned {result[0]}.\n'
+                )
+        if result[0] is True: # Если есть соотвествие адресов
+            test_result = False
+        elif result[0] is False and str(ipv4_address_for_verification)\
+                != str(result[1]):
+            test_result = True
+        else:
+            test_result = False
+        return TestReturn(
+                test_name = test_method_name,
+                test_result = test_result,
+                details =  test_details,
+                test_doc = discription) # Type hinting wrong?
+
+    def test_6(self) -> TestReturn:
+        """Test for input (8,8,8,8)
+
+        The test sends for verification an IP address written without errors in
+        the format of the drain. The result of the comparison must be False.
+
+        """
+        test_method_name = 'test_6'
+        test_method = getattr(TestsIPAddressVerification, test_method_name)
+        discription = test_method.__doc__
+        current_ip = str(GetMyIP().get())
+        obj = IPAddressVerification()
+        ipv4_address_for_verification = (8,8,8,8)
+        obj.user_ip = ipv4_address_for_verification
+        obj.current_ip = current_ip
+        result = obj.run()
+        test_details = (
+                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tUser input is "{ipv4_address_for_verification}"\
+ (after normalize "{result[1]}")\n'
+                f'\tand current external IPv4-address is {result[2]}.\n'
+                f'\tComparing these data, the program returned {result[0]}.\n'
+                )
+        if result[0] is True: # Если есть соотвествие адресов
+            test_result = False
+        elif result[0] is False and str(ipv4_address_for_verification)\
+                != str(result[1]):
+            test_result = True
+        else:
+            test_result = False
+        return TestReturn(
+                test_name = test_method_name,
+                test_result = test_result,
+                details =  test_details,
+                test_doc = discription) # Type hinting wrong?
 
 if __name__ == '__main__':
     test = TestsIPAddressVerification()
