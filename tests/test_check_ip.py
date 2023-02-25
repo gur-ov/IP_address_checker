@@ -109,14 +109,23 @@ class TestsIPAddressVerification():
     def __init__(self):
         self.time_variable = self.current_time()
         self.argv = self.get_argv()
-        if self.argv.details:
-            self.argv = 'details'
-        elif self.argv.setnote:
-            self.argv = 'set_note'
-        elif self.argv.details and self.argv.setnote:
-            self.argv = 'set_note'
+
+        self.tests = ( # Don't forget to add a new test here!
+               self.test_1,
+               self.test_2,
+               self.test_3,
+               self.test_4,
+               self.test_5,
+               self.test_6,
+                )
+
+    def run(self):
+        """
+        """
+        if self.argv.alone:
+            self.running_only_one_test()
         else:
-            pass # Нужно обработать этот сценарий
+            self.running_tests()
 
     def current_time(self) -> TimeReturn:
         my_locale = "Europe/Bratislava" # Enter you city!
@@ -148,24 +157,16 @@ class TestsIPAddressVerification():
                             help="Displaying detailed info on the tests performed.")
         parser.add_argument("-s", "--setnote", action="store_true",\
                             help="Write a detailed test report to a file.")
+        parser.add_argument("-q", "--quickly", action="store_true",\
+                            help="XXX.") # XXX
+        parser.add_argument("-a", "--alone", action="store_true",\
+                            help="XXX.") # XXX
+        parser.add_argument("message", nargs="?", type=str, default="",\
+                            help="XXX.") # XXX
         args = parser.parse_args()
+        print(f'Print in module get_argv {args}')
+        print(f'Print in module get_argv (type) {type(args)}')
         return args
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     def running_tests(self) -> None:
         """All tests should be run here in turn.
@@ -184,55 +185,83 @@ class TestsIPAddressVerification():
         Don't forget to add new tests here!
 
         """
+        # Violation of the DRY principle!
         results: list = []
-        tests = ( # Don't forget to add a new test here!
-               self.test_1(), # Index[0] is results.
-               self.test_2(),
-               self.test_3(),
-               self.test_4(),
-               self.test_5(),
-               self.test_6(),
-                )
-        for i in tests:
-            results.append([i.test_result, i.details, i.test_doc])
-        # variable "i" is possibly unbound if use this messages incorrectly
-        head_message = (f'\nOn {self.time_variable.time_str_for_title},\
+        for one_test in self.tests:
+            result_one_test = one_test()
+            results.append(
+                    {
+                        'name'    : result_one_test.test_name,
+                        'result'  : result_one_test.test_result,
+                        'details' : result_one_test.details,
+                        'doc'     : result_one_test.test_doc
+                        }
+                    )
+        if self.argv == 'details': # For verbose console output
+            print(
+                    f'\nOn {self.time_variable.time_str_for_title},\
  unit tests were launched to\n'
-                        f'test the functionality of module "check_ip.py".\n'
-                        f'_________________________________________________'),
-        success_message = (f'\nThe test "{i.test_name}" was passed SUCCESSFULLY.\n\n'
-                           f'Test details:\n{i.details}\n\n'
-                           f'Test documentation: {i.test_doc}'
-                           f'_________________________________________________'),
-        fail_message = (f'The test {i.test_name} was passed FAIL.\n\n'
-                        f'Test details:\n{i.details}\n\n'
-                        f'Test documentation: {i.test_doc}'
-                        f'_________________________________________________'),
-        reports = {
-                "head": head_message,
-                "success": success_message,
-                "fail": fail_message,
-                "ok": "OK",
-                "no": "FAIL",
-                }
-
-        if self.argv == 'details':
-            print(reports['head'][0])
-            for i in tests:
-                if i.test_result:
-                    print(reports['success'][0])
+                    f'test the functionality of module "check_ip.py".\n'
+                    f'_________________________________________________')
+            for result_one_test in results:
+                if result_one_test['result'] is True:
+                    print(
+                    f'\n\nThe test "{result_one_test["name"]}" was passed\
+ SUCCESSFULLY.\n\n'
+                    f'Test details:\n{result_one_test["details"]}\n\n'
+                    f'Test documentation: {result_one_test["doc"]}'
+                    f'_________________________________________________')
                 else:
-                    print(reports['fail'][0])
-        elif self.argv == 'set_note':
-            pass # send report to file
-        else:
-            for i in tests:
-                if i.test_result:
-                    print(reports['ok'])
-                else:
-                    print(reports['no'])
+                    print(
+                            f'\n\nThe test {result_one_test["name"]} was\
+ passed FAIL.\n\n'
+                            f'Test details:\n{result_one_test["details"]}\n\n'
+                            f'Test documentation: {result_one_test["doc"]}'
+                            f'_________________________________________________')
+            print("\n                        Testing completed.\n")
 
-    def running_only_one_test(self,test_name: Callable[[], TestReturn]) -> None:
+        elif self.argv == 'set_note' or\
+                (self.argv == 'details' and self.argv == 'set_note'):
+            try:
+                with open("unittest_check_ip.log", "a", encoding='utf8') as file:
+                    file.write(
+                            f'\nOn {self.time_variable.time_str_for_title},\
+ unit tests were launched to\n'
+                            f'test the functionality of module "check_ip.py".\n'
+                            f'_________________________________________________')
+                    for result_one_test in results:
+                        if result_one_test['result'] is True:
+                            file.write(
+                            f'\n\nThe test "{result_one_test["name"]}" was\
+ passed SUCCESSFULLY.\n\n'
+                            f'Test details:\n{result_one_test["details"]}\n\n'
+                            f'Test documentation: {result_one_test["doc"]}'
+                            f'_________________________________________________')
+                        else:
+                            file.write(
+                                    f'\n\nThe test {result_one_test["name"]}\
+ was passed FAIL.\n\n'
+                                    f'Test details:\n{result_one_test["details"]}\n\n'
+                                    f'Test documentation: {result_one_test["doc"]}'
+                                    f'_______________________________________\
+__________')
+                    file.write("\n                        Testing completed.\n")
+                print("Testing completed. Results written to file XXX")
+            except: # Handle possible errors!
+                print("WOW!")
+        elif self.argv == 'quickly': # To the console OK if all tests pass
+            all_test_results = tuple(result_one_test['result'] for\
+                    result_one_test in results)
+            if all(i == all_test_results[0] for i in all_test_results):
+                print('All tests passed SUCCESSFULLY.')
+            else:
+                print("At least one test returned FAIL.")
+        else: # Outputting the result of each test to the console without details
+            all_test_results = tuple(result_one_test['result'] for\
+                    result_one_test in results)
+            print(all_test_results)
+
+    def running_only_one_test(self) -> None:
         """Run an individual test.
 
         The result of the method operation depends on the command line
@@ -251,26 +280,44 @@ class TestsIPAddressVerification():
             TestsIPAddressVerification class.
 
         """
-        args = self.get_argv()
-        i = test_name() # i is a short synonym-variable
-        if args == 1:
-            if i.test_result:
-                print(
-                        f'The test {i.test_name} was passed SUCCESSFULLY.\n\n'
-                        f'Test details:\n{i.details}\n\n'
-                        f'Test documentation: {i.test_doc}'
-                        )
-            else:
-                print(
-                        f'The test {i.test_name} was passed FAIL.\n\n'
-                        f'Test details:\n{i.details}\n\n'
-                        f'Test documentation: {i.test_doc}'
-                        )
+        message = self.argv.message
+        if not message:
+            print("ERROR: Please enter test name.")
+            return None
+        test_names = tuple(i.__name__ for i in self.tests)
+        if not message in test_names:
+            print("ERROR: The test name entered does not exist.")
+            return None
+        test_name_to_num_map= {}
+        # Give meaningful names to variables!
+        for i, q in zip(test_names, range(len(test_names))): # No extra numbers in q?
+            test_name_to_num_map[i] = q
+        result_one_test = self.tests[test_name_to_num_map[message]]()
+        result_dict = {
+                'name'    : result_one_test.test_name,
+                'result'  : result_one_test.test_result,
+                'details' : result_one_test.details,
+                'doc'     : result_one_test.test_doc
+                }
+        print(
+                f'\nOn {self.time_variable.time_str_for_title},\
+ unit tests were launched to\n'
+                f'test the functionality of module "check_ip.py".\n'
+                f'_________________________________________________')
+        if result_dict['result'] is True:
+            print(
+            f'\n\nThe test "{result_dict["name"]}" was passed\
+ SUCCESSFULLY.\n\n'
+            f'Test details:\n{result_dict["details"]}\n\n'
+            f'Test documentation: {result_dict["doc"]}'
+            f'_________________________________________________')
         else:
-            if i.test_result: # If True
-                print("OK")
-            else:
-                print("FAIL")
+            print(
+                    f'\n\nThe test {result_dict["name"]} was\
+ passed FAIL.\n\n'
+                    f'Test details:\n{result_dict["details"]}\n\n'
+                    f'Test documentation: {result_dict["doc"]}'
+                    f'_________________________________________________')
 
     def test_1(self) -> TestReturn:
         """Test for input '8.8.8.8'
@@ -288,7 +335,8 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is {result[1]} and current external\n'
                 f'\tIPv4-address is {result[2]}. Comparing these data,\n'
                 f'\tthe program returned {result[0]}.'
@@ -319,13 +367,14 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is "{ipv4_address_for_verification}"\
  (after normalize "{result[1]}")\n'
                 f'\tand current external IPv4-address is {result[2]}.\n'
                 f'\tComparing these data, the program returned {result[0]}.\n'
                 )
-        if result[0] is True: # Если есть соотвествие адресов
+        if result[0] is True:
             test_result = False
         elif result[0] is False and str(ipv4_address_for_verification)\
                 != str(result[1]):
@@ -355,13 +404,14 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is "{ipv4_address_for_verification}"\
  (after normalize "{result[1]}")\n'
                 f'\tand current external IPv4-address is {result[2]}.\n'
                 f'\tComparing these data, the program returned {result[0]}.\n'
                 )
-        if result[0] is True: # Если есть соотвествие адресов
+        if result[0] is True:
             test_result = False
         elif result[0] is False and str(ipv4_address_for_verification)\
                 != str(result[1]):
@@ -391,13 +441,14 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is "{ipv4_address_for_verification}"\
  (after normalize "{result[1]}")\n'
                 f'\tand current external IPv4-address is {result[2]}.\n'
                 f'\tComparing these data, the program returned {result[0]}.\n'
                 )
-        if result[0] is True: # Если есть соотвествие адресов
+        if result[0] is True:
             test_result = False
         elif result[0] is False and str(ipv4_address_for_verification)\
                 != str(result[1]):
@@ -427,13 +478,14 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is "{ipv4_address_for_verification}"\
  (after normalize "{result[1]}")\n'
                 f'\tand current external IPv4-address is {result[2]}.\n'
                 f'\tComparing these data, the program returned {result[0]}.\n'
                 )
-        if result[0] is True: # Если есть соотвествие адресов
+        if result[0] is True:
             test_result = False
         elif result[0] is False and str(ipv4_address_for_verification)\
                 != str(result[1]):
@@ -444,7 +496,7 @@ class TestsIPAddressVerification():
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
 
     def test_6(self) -> TestReturn:
         """Test for input (8,8,8,8)
@@ -463,13 +515,14 @@ class TestsIPAddressVerification():
         obj.current_ip = current_ip
         result = obj.run()
         test_details = (
-                f'\tTest was started in {self.time_variable.time_str_for_simple_test}.\n'
+                f'\tTest was started in\
+ {self.time_variable.time_str_for_simple_test}.\n'
                 f'\tUser input is "{ipv4_address_for_verification}"\
  (after normalize "{result[1]}")\n'
                 f'\tand current external IPv4-address is {result[2]}.\n'
                 f'\tComparing these data, the program returned {result[0]}.\n'
                 )
-        if result[0] is True: # Если есть соотвествие адресов
+        if result[0] is True:
             test_result = False
         elif result[0] is False and str(ipv4_address_for_verification)\
                 != str(result[1]):
@@ -480,13 +533,9 @@ class TestsIPAddressVerification():
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
+
 
 if __name__ == '__main__':
     test = TestsIPAddressVerification()
-
-    # START ALL TESTS
-    test.running_tests()
-
-    # START ONLY ONE TEST
-    # test.running_only_one_test(test.test_1)
+    test.run()
