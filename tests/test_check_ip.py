@@ -3,33 +3,26 @@
 
 Example
 -------
-To run the module, you need to configure. You need to specify at the bottom
-which type of launch is preferable - launching all tests or a single launch of
-the selected test. By default, all tests are configured to run.
+The launch is carried out from the command line. If you want to get only the
+results of all tests without details:
 
-To select to run all tests, you should write:
+      $ Python test_check_ip
 
-    if __name__ == '__main__':
-        test = TestsIPAddressVerification()
-        # START ALL TESTS
-        test.running_tests()
+If you want details, you need to start it like this:
 
-To run one test, you need to pass the name of the selected test method to the
-running_only_one_test method (in this example, test_1 is passed):
+      $ Python test_check_ip -d
 
-    if __name__ == '__main__':
-        test = TestsIPAddressVerification()
-        # START ONLY ONE TEST
-        test.running_only_one_test(test.test_1)
+If you want a short answer about whether all tests passed, you can do this:
 
-After configuration, launch is carried out from the command line. If you want
-to get only the test result without details:
+      $ Python test_check_ip -q
 
-    $ python test_check_ip
+To write the result of passing all tests to a file, you can do this:
 
-If you need details, you need to start it like this:
+      $ Python test_check_ip -s
 
-    $ python test_check_ip -d
+To run one test, you can do this:
+
+      $ Python test_check_ip -a test_name
 
 """
 
@@ -37,7 +30,7 @@ import sys
 import argparse
 import os
 from dataclasses import dataclass
-from typing import Optional, Callable, NamedTuple
+from typing import Optional, NamedTuple
 import datetime
 import pytz
 
@@ -72,32 +65,35 @@ class TestReturn():
     test_doc: Optional[str]
 
 class TimeReturn(NamedTuple):
-    """
+    """ This class is a template for return method "self.current_time".
+
+     This class, as well as the self.current_time method, are not supposed to
+     be changed in while using this module.
+
     """
     time_str_for_title: str
     time_str_for_simple_test: str
 
 class TestsIPAddressVerification():
-    """Collection and management of unit tests for IPAddressVerification.
+    """Collect and manage unit tests for IPAddressVerification.
 
-    This class is a collection of unit tests to test the operation of the
-    IPAddressVerification class.
+    This class is a set of unit tests for verifying the operation of the
+    IPAddressVerification class, as well as methods for controlling the launch
+    of these tests.
 
-    Unit tests can be run at the request of the tester as a group, using the
-    running_tests control method, or individually, by calling them using the
-    running_only_one_test method, passing the name of the method responsible for
-    a particular test as an argument.
-
-    Test results can be presented both in a simple "OK/FAIL" form and in
-    expanded form, for which you need to pass the "-d" or "--details" command
-    line argument when starting the test.
+    The class implements various return test results. Details of usage are
+    written in the doctrine of this module.
 
     methods
     -------
     __init__
         The class initialization method. Not used.
+    current_time
+        Getting the current time and creating strings for later use.
     get_argv
         Receiving and processing command line arguments.
+    run
+        Test start control method.
     running_only_one_test
         Running and holding one text.
     running_tests
@@ -119,8 +115,10 @@ class TestsIPAddressVerification():
                self.test_6,
                 )
 
-    def run(self):
-        """
+    def run(self) -> None:
+        """ The method that controls the launch of testing.
+
+         If necessary, change the "my_locale" variable.
         """
         if self.argv.alone:
             self.running_only_one_test()
@@ -128,7 +126,7 @@ class TestsIPAddressVerification():
             self.running_tests()
 
     def current_time(self) -> TimeReturn:
-        my_locale = "Europe/Bratislava" # Enter you city!
+        my_locale = "Europe/Bratislava" # Add you city!
         timezone = pytz.timezone(my_locale)
         now = datetime.datetime.now()
         now_with_timezone = timezone.localize(now)
@@ -142,47 +140,45 @@ class TestsIPAddressVerification():
     def get_argv(self) -> argparse.Namespace:
         """Description and processing of command line arguments.
 
-        If testing is carried out with the -d or --details option, then details
-        are displayed, and not just the result of passing the test.
+        If testing is carried out with the -d or --details option, then
+        details are displayed, and not just the result of passing the test.
 
-        returns
-        _______
-        int
-            1 if the use of the -d or --details command line argument was detected.
+        Possible command line arguments to use are described in the "help"
+        options.
+
+         returns
+         _______
+         argparse.namespace
+             This is the class that contains the argument flags as well as the
+             "message" variable string.
 
         """
         parser = argparse.ArgumentParser(\
                 description="Getting a command line argument.")
         parser.add_argument("-d", "--details", action="store_true",\
-                            help="Displaying detailed info on the tests performed.")
+                            help="Displaying detailed info on the tests\
+                            performed.")
         parser.add_argument("-s", "--setnote", action="store_true",\
                             help="Write a detailed test report to a file.")
         parser.add_argument("-q", "--quickly", action="store_true",\
-                            help="XXX.") # XXX
+                            help="Get a quick report on all tests at once.")
         parser.add_argument("-a", "--alone", action="store_true",\
-                            help="XXX.") # XXX
+                            help="Run a single test. Be sure to use the name\
+                            of the test as the next argument..")
         parser.add_argument("message", nargs="?", type=str, default="",\
-                            help="XXX.") # XXX
+                            help="An argument that takes the name of the test\
+                            to be run.")
         args = parser.parse_args()
-        print(f'Print in module get_argv {args}')
-        print(f'Print in module get_argv (type) {type(args)}')
         return args
 
     def running_tests(self) -> None:
-        """All tests should be run here in turn.
+        """Run all tests.
 
-        Run all tests. The result of the method operation depends on the command
-        line parameters. If there are no parameters, a short information about
-        the results of the tests will be displayed in the console. If the -d or
-        --details parameter is present, detailed information about the results
-        of the tests will be displayed in the console.
+        The result of the method operation depends on the command line
+        parameters.
 
-        There is no return statement in the method. The method prints the test
-        results to the console.
-
-        Note
-        ____
-        Don't forget to add new tests here!
+        There is no return statement in the method. Data output is produced
+        either to the console or written to a file.
 
         """
         # Violation of the DRY principle!
@@ -197,7 +193,7 @@ class TestsIPAddressVerification():
                         'doc'     : result_one_test.test_doc
                         }
                     )
-        if self.argv == 'details': # For verbose console output
+        if self.argv.details: # For verbose console output
             print(
                     f'\nOn {self.time_variable.time_str_for_title},\
  unit tests were launched to\n'
@@ -218,80 +214,60 @@ class TestsIPAddressVerification():
                             f'Test details:\n{result_one_test["details"]}\n\n'
                             f'Test documentation: {result_one_test["doc"]}'
                             f'_________________________________________________')
-            print("\n                        Testing completed.\n")
-
-        elif self.argv == 'set_note' or\
-                (self.argv == 'details' and self.argv == 'set_note'):
-            try:
-                with open("unittest_check_ip.log", "a", encoding='utf8') as file:
-                    file.write(
-                            f'\nOn {self.time_variable.time_str_for_title},\
- unit tests were launched to\n'
-                            f'test the functionality of module "check_ip.py".\n'
-                            f'_________________________________________________')
-                    for result_one_test in results:
-                        if result_one_test['result'] is True:
-                            file.write(
-                            f'\n\nThe test "{result_one_test["name"]}" was\
- passed SUCCESSFULLY.\n\n'
-                            f'Test details:\n{result_one_test["details"]}\n\n'
-                            f'Test documentation: {result_one_test["doc"]}'
-                            f'_________________________________________________')
-                        else:
-                            file.write(
-                                    f'\n\nThe test {result_one_test["name"]}\
- was passed FAIL.\n\n'
-                                    f'Test details:\n{result_one_test["details"]}\n\n'
-                                    f'Test documentation: {result_one_test["doc"]}'
-                                    f'_______________________________________\
+            print('\n                        Testing completed.\n')
+        elif self.argv.setnote  or\
+                (self.argv.details and self.argv.setnote):
+            with open("unittest_check_ip.log", "a", encoding='utf8') as file:
+                file.write(
+                        f'\nOn {self.time_variable.time_str_for_title},\
+unit tests were launched to\n'
+                        f'test the functionality of module "check_ip.py".\n'
+                        f'_________________________________________________')
+                for result_one_test in results:
+                    if result_one_test['result'] is True:
+                        file.write(
+                        f'\n\nThe test "{result_one_test["name"]}" was\
+passed SUCCESSFULLY.\n\n'
+                        f'Test details:\n{result_one_test["details"]}\n\n'
+                        f'Test documentation: {result_one_test["doc"]}'
+                        f'_________________________________________________')
+                    else:
+                        file.write(
+                                f'\n\nThe test {result_one_test["name"]}\
+was passed FAIL.\n\n'
+                                f'Test details:\n{result_one_test["details"]}\n\n'
+                                f'Test documentation: {result_one_test["doc"]}'
+                                f'_______________________________________\
 __________')
-                    file.write("\n                        Testing completed.\n")
-                print("Testing completed. Results written to file XXX")
-            except: # Handle possible errors!
-                print("WOW!")
-        elif self.argv == 'quickly': # To the console OK if all tests pass
+                file.write("\n                        Testing completed.\n")
+            print('Testing completed. Results written to file\
+ "unittest_check_ip.log".')
+        elif self.argv.quickly: # To the console OK if all tests pass
             all_test_results = tuple(result_one_test['result'] for\
                     result_one_test in results)
             if all(i == all_test_results[0] for i in all_test_results):
                 print('All tests passed SUCCESSFULLY.')
             else:
-                print("At least one test returned FAIL.")
-        else: # Outputting the result of each test to the console without details
+                print('At least one test returned FAIL.')
+        else: # Outputting the result of each test to console without details
             all_test_results = tuple(result_one_test['result'] for\
                     result_one_test in results)
             print(all_test_results)
 
     def running_only_one_test(self) -> None:
         """Run an individual test.
-
-        The result of the method operation depends on the command line
-        parameters. If there are no parameters, a short information about the
-        results of the tests will be displayed in the console. If the -d or
-        --details parameter is present, detailed information about the results
-        of the tests will be displayed in the console.
-
-        There is no return statement in the method. The method prints the test
-        results to the console.
-
-        Parameters
-        __________
-        test_name : Callable
-            The name of the function that contains the unit test from the
-            TestsIPAddressVerification class.
-
         """
         message = self.argv.message
         if not message:
-            print("ERROR: Please enter test name.")
+            print('ERROR: Please enter test name.')
             return None
         test_names = tuple(i.__name__ for i in self.tests)
         if not message in test_names:
-            print("ERROR: The test name entered does not exist.")
+            print('ERROR: The test name entered does not exist.')
             return None
         test_name_to_num_map= {}
-        # Give meaningful names to variables!
-        for i, q in zip(test_names, range(len(test_names))): # No extra numbers in q?
-            test_name_to_num_map[i] = q
+        for one_test, test_serial_number in zip(test_names, range(len(test_names))):
+            test_name_to_num_map[one_test] = test_serial_number
         result_one_test = self.tests[test_name_to_num_map[message]]()
         result_dict = {
                 'name'    : result_one_test.test_name,
@@ -320,11 +296,7 @@ __________')
                     f'_________________________________________________')
 
     def test_1(self) -> TestReturn:
-        """Test for input '8.8.8.8'
-
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
-
+        """Test for input '8.8.8.8'.
         """
         test_method_name = 'test_1'
         test_method = getattr(TestsIPAddressVerification, test_method_name)
@@ -348,14 +320,10 @@ __________')
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
 
     def test_2(self) -> TestReturn:
-        """Test for input '   8,8.8.8,   '
-
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
-
+        """Test for input '   8,8.8.8,   '.
         """
         test_method_name = 'test_2'
         test_method = getattr(TestsIPAddressVerification, test_method_name)
@@ -385,14 +353,10 @@ __________')
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
 
     def test_3(self) -> TestReturn:
-        """Test for input '8.8.777.8'
-
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
-
+        """Test for input '8.8.777.8'.
         """
         test_method_name = 'test_3'
         test_method = getattr(TestsIPAddressVerification, test_method_name)
@@ -422,14 +386,10 @@ __________')
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
 
     def test_4(self) -> TestReturn:
-        """Test for input '8.8.-777.8'
-
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
-
+        """Test for input '8.8.-777.8'.
         """
         test_method_name = 'test_4'
         test_method = getattr(TestsIPAddressVerification, test_method_name)
@@ -459,14 +419,10 @@ __________')
                 test_name = test_method_name,
                 test_result = test_result,
                 details =  test_details,
-                test_doc = discription) # Type hinting wrong?
+                test_doc = discription)
 
     def test_5(self) -> TestReturn:
-        """Test for input 8,8,8,8
-
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
-
+        """Test for input 8,8,8,8.
         """
         test_method_name = 'test_5'
         test_method = getattr(TestsIPAddressVerification, test_method_name)
@@ -499,10 +455,10 @@ __________')
                 test_doc = discription)
 
     def test_6(self) -> TestReturn:
-        """Test for input (8,8,8,8)
+        """Test for input (8,8,8,8).
 
-        The test sends for verification an IP address written without errors in
-        the format of the drain. The result of the comparison must be False.
+        The test sends for verification an IP address written without errors
+        in the format of the drain. The result of the comparison must be False.
 
         """
         test_method_name = 'test_6'

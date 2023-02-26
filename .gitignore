@@ -1,7 +1,10 @@
 # Ignore all log file
 *.txt
+*.log
 # Ignore pycache folder
 /ip_checker/__pycache__/
 # Ignoring glade program files
 *.galde
 *.glade~
+# Ignoring auxiliary folder
+/info/

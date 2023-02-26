@@ -197,8 +197,9 @@ class VisibleWindow(gtk.Window):
         # Starting the comparison process
         logger.info('Starting the comparison process')
         try:
-            comparison = IPAddressVerification(
-                    str(input_field_data), str(current_ip))
+            comparison = IPAddressVerification()
+            comparison.current_ip = current_ip
+            comparison.user_ip = input_field_data
         except NameError as exc:
             logger.info('An attempt to instantiate the\
                         IPAddressVerification class failed.')

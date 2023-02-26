@@ -53,7 +53,6 @@ def validate_input(func:\
          str: Validated data containing a valid IPv4 address.
     """
     def wrapper(self, *args, **kwargs) -> None:
-
         if bool(kwargs):
             if len(kwargs) == 1:
                 for value in kwargs.values():
@@ -63,6 +62,8 @@ def validate_input(func:\
         else:
             if len(args) == 1:
                 ipv4_not_verified = args[0]
+                if isinstance(ipv4_not_verified, tuple):
+                    ipv4_not_verified = ".".join(str(i) for i in ipv4_not_verified)
             elif len(args) == 4:
                 ipv4_not_verified_list = list(args)
                 ipv4_not_verified = \

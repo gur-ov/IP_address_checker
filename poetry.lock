@@ -320,6 +320,18 @@ files = [
 ]
 
 [[package]]
+name = "pytz"
+version = "2022.7.1"
+description = "World timezone definitions, modern and historical"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytz-2022.7.1-py2.py3-none-any.whl", hash = "sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a"},
+    {file = "pytz-2022.7.1.tar.gz", hash = "sha256:01a0681c4b9684a28304615eba55d1ab31ae00bf68ec157ec3708a8182dbbcd0"},
+]
+
+[[package]]
 name = "pywin32-ctypes"
 version = "0.2.0"
 description = ""
@@ -417,4 +429,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.12"
-content-hash = "3d96f43fc0762a5bc20ff531aca10088c90d4e35911ccfbc63b90a3c41ace170"
+content-hash = "6b5198d5fc3830e6ad948e5244595caded3881049ed5e9d4e5f1f0218b746d20"
